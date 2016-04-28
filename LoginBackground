@@ -1,0 +1,91 @@
+#!/bin/bash
+
+#########################################################################
+#########################################################################
+# Hi, 
+# 
+# This script impliments a blurred login background to 
+# match the current desktop background when you want to change it.  
+# This is a clone of the feature that OSX has.
+# This relies on GIMP being installed,
+# the Cinnamon desktop enviornment in use,
+# as well as the LightDM display manager for your login screen.
+#
+# Origionally tested in Debian 3.16.7.
+# 
+# Steps
+# ------------------------------
+# Step1:  Copy the .scm script to ~/.gimpXXX/scripts/
+#
+# Step2: Change the 'background' line in :
+#
+#        /etc/lightdm/lightdm-gtk-greeter.conf
+#
+#        to be equal to:
+#
+#        /home/<your_usr_name>/<path_to_background>/login_background.jpg
+#
+#        OR the perfered filepath to your backgrounds folder 
+#        and file extension.  I can't figure out how to detect 
+#        all filetypes in the config file unfortunalely, so 
+#        .jpg only works for now.
+# 
+# Step3: Change the variable 'defaultLoginBackground' below 
+#        to reflect your usr name and corrent path to your 
+#        backgrounds.
+#
+# Step4: Place in your local bin/ and run this script, with 
+#        the complete path to your desired image as the argument.
+#        eg:   
+#           LoginBackground /home/<usr_name>/Pictures/Backgrounds/aaa.jpg
+#
+# Step5: Logout and see the results!
+#
+# ENJOY!
+#
+# @author<Matthew Pope>
+# @date  <4/28/16>
+# @github<www.github.com/mpope9>
+#
+#
+# PS: I'm not responsible if this breaks everything, use at your own risk.
+#
+############################################################################
+############################################################################
+
+
+# Creates a new filename with the same extension, 
+# but named login_background.$extention
+image=$1
+extension="${image##*.}"
+defaultLoginBackground="/home/<YOUR_USR_NAME_AND_PATH>/login_background.$extension"
+
+# Remove the previous login_background.
+if [ -e $defaultLoginBackground ]
+then
+   rm $defaultLoginBackground
+fi
+
+# The copy.
+copy=( "cp $image $defaultLoginBackground" )
+
+# Executues the copy.  Creates <defaultLoginBackground>.jpg
+eval $copy
+
+# Gimp script to edit photo.  Only edit the floating numbers for effects.
+# Changes the file created by cp above.
+# I like 26, but 30 is good as well.
+edit=( "gimp -i -b '(simple-gauss 1 \"$defaultLoginBackground\" 26.0 26.0 0)'" )
+exitGimp=( " -b '(gimp-quit 0)'" )
+gimp=$edit$exitGimp
+
+eval $gimp
+
+# Commands to change the background of the desktop.
+cinnamon=( "gsettings set org.cinnamon.desktop.background picture-uri file:///$image" )
+
+eval $cinnamon
+
+echo
+echo "All done!  Logout to see your new login background!"
+echo
